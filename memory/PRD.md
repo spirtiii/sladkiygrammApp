@@ -1,91 +1,75 @@
 # Sladkiygramm 3.6 🍬 - PRD
 
 ## Overview
-Sladkiygramm is a Telegram-like messenger converted from HTML to a native Expo React Native mobile app with Firebase Realtime Database.
+Sladkiygramm — Telegram-like messenger, native Expo React Native app with Firebase Realtime Database.
 
 ## Tech Stack
-- **Frontend**: Expo SDK 54, React Native, expo-router
-- **Backend**: Firebase Realtime Database (direct client SDK)
-- **Audio**: expo-av (voice messages)
-- **Images**: expo-image-picker (avatars, photos)
-- **UI**: expo-linear-gradient, @expo/vector-icons, Liquid Glass style
+- Expo SDK 54, React Native, expo-router, Firebase JS SDK v9+
+- expo-av (voice), expo-image-picker (photos/avatars), expo-linear-gradient
 
-## Features
+## All Features
 
-### Core
-1. **Auth** - Nickname + 4-digit security code + recovery
-2. **Chat List** - Real-time with favorites & archive sections
-3. **Chat Room** - Full messaging with replies, reactions, search, voice
-4. **Profile** - Avatar upload (Image from Firebase), bio, animated secret code
-5. **Settings** - Language (EN/RU), 4 Themes + Auto, Notifications toggle, Logout
-6. **Themes** - Space, Sunset, Dark, Light + Auto (day/night)
+### Auth
+- Nickname + 4-digit security code + recovery via friend's chat
 
 ### Messaging
-7. **Date Separators** - Telegram-style date clouds between messages
-8. **Full Date/Time** - "14:30 • 15 Mar" on every message
-9. **Message Reactions** - ❤️👍😂🔥😮😢✅✨ (single per user, toggle)
-10. **Reply** - Quote reply with sender name
-11. **Delete** - For me / For everyone
-12. **Read Receipts** - ✓ sent, ✓✓ read
+- Real-time messages via Firebase RTDB
+- Date separators (Telegram-style date clouds)
+- Full date+time on messages: "14:30 • 15 Mar"
+- Reply to messages with quote
+- Delete for me / Delete for everyone (with confirmation dialog)
+- Read receipts (✓ sent, ✓✓ read)
+- Typing indicator
+- Pin/unpin messages
+- Message reactions: ❤️👍😂🔥😮😢✅✨ (single per user, toggle)
+- Search in chat with text highlight + up/down navigation
 
 ### Media
-13. **Photos** - Pick up to 3, collage display, fullscreen preview
-14. **Sticker Packs** - 40 stickers in 5 categories (candy, love, party, cool, animals)
-15. **Voice Messages** - Hold to record, shows duration, play button
-16. **Gifts** - 🧸💝🎂🍬 with animated gift messages
+- Photos: pick up to 3, collage display, fullscreen preview
+- Sticker packs: 40 stickers in 5 categories
+- Voice messages: hold mic to record, shows duration, play button
+- Gifts: 🧸💝🎂🍬 with animated messages
 
-### Calls (Firebase signaling)
-17. **Audio/Video Calls** - Calling → Incoming → Active states
-18. **Mic Mute** - Toggle with status visible to both users
-19. **Camera Toggle** - On/off for video calls
-20. **Call Duration** - Timer displayed during active call
-21. **Incoming Call UI** - Avatar, name, accept/decline buttons
+### Calls (Firebase Signaling)
+- Audio/Video calls: Calling → Incoming → Active
+- Mic mute (visible to both), Camera toggle
+- Call timer, Accept/Decline incoming calls
 
 ### Social
-22. **User Profile Modal** - Click header → avatar, bio, call, video, gift buttons
-23. **User Search** - Find users by nickname
-24. **Online Status** - Green dot + last seen with full date
-25. **Typing Indicator** - Real-time
+- User profile modal: avatar, bio, online status, call/video/gift buttons
+- Smart prefix search for users (startsWith)
+- Online status with smart "last seen" (minutes ago, yesterday, exact date)
+- Block/unblock users
 
 ### Groups
-26. **Group Info** - Avatar, name, member list with count
-27. **Member Management** - Kick members (owner only)
-28. **Transfer Ownership** - Long-press member → transfer
-29. **System Messages** - "User was kicked", "Name changed"
+- Create groups from FAB (select contacts)
+- Member list with count, Creator badge
+- Kick members, Transfer ownership (owner only)
+- Leave group, Delete group
+- System messages for group events
 
 ### Chat Management
-30. **Favorites** - Saved messages chat
-31. **Archive** - Archive/unarchive with separate section
-32. **Mute** - Per-chat with bell icon indicator
-33. **Pin** - Pin important chats to top
-34. **Context Menu** - Long-press for column-style actions
+- Favorites (saved messages)
+- Archive/Unarchive
+- Mute per-chat (bell icon indicator)
+- Pin chats, Delete with confirmation (for me / for everyone)
 
 ### UI/UX
-35. **Liquid Glass Style** - Semi-transparent backgrounds with border effects
-36. **Animated Profile** - Rotating ring, pulsing code, glow effects
-37. **Search in Chat** - With highlight + up/down navigation
-38. **i18n** - Full English/Russian localization
-39. **Splash Screen** - Spinning candy animation
+- 4 themes (Space/Sunset/Dark/Light) + Auto theme (day/night)
+- Liquid glass style with transparent backgrounds
+- Pleasant dark color palettes
+- Animated profile (rotating ring, pulsing secret code)
+- No $ in nicknames
+- i18n: English/Russian
+- Privacy & Terms page
 
 ## File Structure
 ```
 frontend/app/
-  _layout.tsx         - Root layout with providers
-  index.tsx           - Animated splash screen
-  auth.tsx            - Authentication screen
-  (tabs)/
-    _layout.tsx       - Tab navigation (Chats/Profile/Settings)
-    chats.tsx         - Chat list + archive + favorites
-    profile.tsx       - Profile with animated code
-    settings.tsx      - All settings
-  chat/[id].tsx       - Full chat room with all features
+  _layout.tsx, index.tsx, auth.tsx
+  (tabs)/ chats.tsx, profile.tsx, settings.tsx
+  chat/ [id].tsx
 frontend/src/
-  contexts/ThemeContext.tsx  - 4 themes + auto
-  contexts/AuthContext.tsx   - Firebase auth
-  lib/firebase.ts           - Firebase SDK init
-  lib/i18n.ts               - EN/RU translations
+  contexts/ ThemeContext.tsx, AuthContext.tsx
+  lib/ firebase.ts, i18n.ts
 ```
-
-## Business Enhancement
-- Premium sticker packs & themes as in-app purchases
-- Referral rewards system for user growth
