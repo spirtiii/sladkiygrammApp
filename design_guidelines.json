@@ -1,0 +1,172 @@
+{
+  "project_name": "Sladkiygramm 3.6 🍬",
+  "version": "1.0.0",
+  "tech_stack": {
+    "framework": "React Native (Expo SDK 54)",
+    "language": "JavaScript (.js)",
+    "navigation": "expo-router",
+    "styling": "StyleSheet + expo-blur + expo-linear-gradient",
+    "animations": "react-native-reanimated",
+    "backend": "Firebase Realtime Database (Web SDK compatible)",
+    "calls": "PeerJS (via WebView or react-native-webrtc if compatible, otherwise simulation)",
+    "icons": "@expo/vector-icons"
+  },
+  "typography": {
+    "font_family": "Montserrat",
+    "loading_strategy": "Load via expo-font from Google Fonts",
+    "weights": {
+      "regular": "Montserrat_400Regular",
+      "medium": "Montserrat_500Medium",
+      "bold": "Montserrat_700Bold"
+    },
+    "sizes": {
+      "h1": 32,
+      "h2": 24,
+      "body": 16,
+      "caption": 12,
+      "button": 16
+    }
+  },
+  "colors": {
+    "themes": {
+      "space": {
+        "background_gradient": ["#0f0c29", "#302b63", "#24243e"],
+        "primary": "#d946ef",
+        "text": "#e0d0ff",
+        "text_secondary": "#bbaadd",
+        "glass_bg": "rgba(30, 20, 50, 0.7)",
+        "glass_border": "rgba(255, 255, 255, 0.1)",
+        "message_in": "rgba(60, 20, 90, 0.6)",
+        "message_out": "rgba(217, 70, 239, 0.4)",
+        "nav_bg": "rgba(15, 12, 41, 0.95)"
+      },
+      "sunset": {
+        "background_gradient": ["#ff9966", "#ff5e62", "#9a366b"],
+        "primary": "#ffcc00",
+        "text": "#fff5e6",
+        "text_secondary": "#ffdab9",
+        "glass_bg": "rgba(100, 30, 50, 0.6)",
+        "glass_border": "rgba(255, 255, 255, 0.2)",
+        "message_in": "rgba(100, 20, 40, 0.5)",
+        "message_out": "rgba(255, 94, 98, 0.6)",
+        "nav_bg": "rgba(154, 54, 107, 0.95)"
+      },
+      "dark": {
+        "background_gradient": ["#232526", "#414345"],
+        "primary": "#4facfe",
+        "text": "#ffffff",
+        "text_secondary": "#9aaabb",
+        "glass_bg": "rgba(40, 44, 52, 0.8)",
+        "glass_border": "rgba(255, 255, 255, 0.05)",
+        "message_in": "rgba(255, 255, 255, 0.1)",
+        "message_out": "rgba(79, 172, 254, 0.4)",
+        "nav_bg": "rgba(35, 37, 38, 0.95)"
+      },
+      "light": {
+        "background_gradient": ["#e0eafc", "#cfdef3"],
+        "primary": "#007bff",
+        "text": "#333333",
+        "text_secondary": "#666666",
+        "glass_bg": "rgba(255, 255, 255, 0.65)",
+        "glass_border": "rgba(255, 255, 255, 0.8)",
+        "message_in": "rgba(255, 255, 255, 0.8)",
+        "message_out": "rgba(0, 123, 255, 0.3)",
+        "nav_bg": "rgba(255, 255, 255, 0.95)"
+      }
+    }
+  },
+  "component_guidelines": {
+    "GlassContainer": {
+      "description": "Base container for cards and panels",
+      "style": {
+        "borderRadius": 24,
+        "borderWidth": 1,
+        "overflow": "hidden"
+      },
+      "implementation": "Use expo-blur (BlurView) with intensity=25-50. Wrap inside a View with borderColor."
+    },
+    "CandyButton": {
+      "description": "Primary action button with sweet aesthetic",
+      "style": {
+        "borderRadius": 16,
+        "padding": 14,
+        "shadowColor": "primary_color",
+        "shadowOffset": { "width": 0, "height": 4 },
+        "shadowOpacity": 0.3,
+        "shadowRadius": 5,
+        "elevation": 5
+      },
+      "implementation": "Use TouchableOpacity. Background should be the Theme Primary color. Text White Bold."
+    },
+    "ChatBubble": {
+      "description": "Message bubble with glass or gradient effect",
+      "style": {
+        "borderRadius": 18,
+        "padding": 12,
+        "maxWidth": "80%"
+      },
+      "variants": {
+        "in": "Glass background (theme.message_in), alignLeft, borderBottomLeftRadius: 4",
+        "out": "Gradient/Color background (theme.message_out), alignRight, borderBottomRightRadius: 4"
+      }
+    },
+    "SecretCode": {
+      "description": "Blurred text that reveals on tap",
+      "style": {
+        "fontFamily": "monospace",
+        "letterSpacing": 8,
+        "fontSize": 32
+      },
+      "interaction": "Toggle blur on press. Use state 'isRevealed'."
+    },
+    "Avatar": {
+      "description": "User profile picture with status",
+      "style": {
+        "width": 50,
+        "height": 50,
+        "borderRadius": 25,
+        "borderWidth": 1,
+        "borderColor": "rgba(255,255,255,0.2)"
+      },
+      "status_indicator": "Green dot (12x12) with white border at bottom-right"
+    }
+  },
+  "assets": {
+    "fonts": {
+      "Montserrat": "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap"
+    },
+    "images": {
+      "avatars": [
+        "https://images.unsplash.com/photo-1758600433381-e84aca5afeda?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwxfHx5b3VuZyUyMHBlcnNvbiUyMGNvbG9yZnVsJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzczNTg2OTE5fDA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1624718903239-0c8e187a8f65?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwyfHx5b3VuZyUyMHBlcnNvbiUyMGNvbG9yZnVsJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzczNTg2OTE5fDA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1666979299601-2c36fb01732d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwzfHx5b3VuZyUyMHBlcnNvbiUyMGNvbG9yZnVsJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzczNTg2OTE5fDA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1666979293169-4fb1955ce476?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHw0fHx5b3VuZyUyMHBlcnNvbiUyMGNvbG9yZnVsJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzczNTg2OTE5fDA&ixlib=rb-4.1.0&q=85"
+      ],
+      "gifts": {
+        "love": "❤️",
+        "like": "👍",
+        "toy": "🧸"
+      },
+      "splash_icon": "🍬"
+    }
+  },
+  "implementation_steps": [
+    "1. Install Dependencies: expo-blur, expo-linear-gradient, @expo/vector-icons, react-native-reanimated, expo-font, firebase.",
+    "2. Setup Contexts: Create ThemeContext to handle theme switching (Space/Sunset/Dark/Light).",
+    "3. Create Layout: Use Stack from expo-router. Create a layout wrapper that applies the background gradient.",
+    "4. Build Components: Implement GlassView, CandyButton, InputField (Glass style).",
+    "5. Auth Screen: Glass panel centered. Nickname input + Code verification.",
+    "6. Main Screen: Tab Navigation (Chats, Profile, Settings). FAB with animation.",
+    "7. Chat Screen: FlatList for messages. Input bar with Glass effect.",
+    "8. Integrate Logic: Connect to Firebase Realtime Database for chat sync.",
+    "9. Animations: Add 'Candy Spinner' on splash and 'Message Pop' on new messages using Reanimated."
+  ],
+  "universal_guidelines": [
+    "NO AI SLOP: Do not use generic 'Inter' font. Use Montserrat as requested.",
+    "GLASSMORPHISM: Blur intensity must be visible (20-50). Do not make it opaque.",
+    "CONTRAST: Ensure text is readable on glass. Use text shadows if necessary.",
+    "AESTHETIC: Keep it 'Sweet'. Use rounded corners (20px+).",
+    "ANIMATION: Everything must pop. Buttons scale on press. Lists fade in.",
+    "DATA-TESTID: Add 'data-testid' to all interactive elements for testing."
+  ]
+}
