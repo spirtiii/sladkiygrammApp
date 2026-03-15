@@ -63,7 +63,8 @@ export default function ProfileScreen() {
     Alert.alert('✓', lang === 'ru' ? 'Сохранено' : 'Saved');
   };
 
-  const letter = myNick ? myNick.replace('$', '').charAt(0).toUpperCase() : '?';
+  const letter = myNick ? myNick.replace(/^\$/, '').charAt(0).toUpperCase() : '?';
+  const displayNick = myNick ? myNick.replace(/^\$/, '') : '';
   const glassStyle = { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1 };
 
   return (
@@ -84,7 +85,7 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
-        <Text testID="profile-nick" style={[styles.nickDisplay, { color: theme.text }]}>{myNick?.replace('$', '')}</Text>
+        <Text testID="profile-nick" style={[styles.nickDisplay, { color: theme.text }]}>{displayNick}</Text>
 
         <TextInput testID="bio-input" style={[styles.bioInput, { color: theme.text, borderColor: theme.glass_border }]}
           placeholder="Bio / Description..." placeholderTextColor={theme.text_secondary}

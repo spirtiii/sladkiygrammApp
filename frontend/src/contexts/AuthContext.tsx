@@ -16,19 +16,14 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  myId: null,
-  myNick: null,
-  myAvatar: '',
-  isLoggedIn: false,
-  isLoading: true,
-  login: async () => ({ needsCode: false }),
-  verifyCode: async () => false,
-  startSession: () => {},
-  logout: () => {},
-  updateAvatar: () => {},
+  myId: null, myNick: null, myAvatar: '', isLoggedIn: false, isLoading: true,
+  login: async () => ({ needsCode: false }), verifyCode: async () => false,
+  startSession: () => {}, logout: () => {}, updateAvatar: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+const cleanNick = (n: string) => n.replace(/^\$/, '');
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [myId, setMyId] = useState<string | null>(null);
@@ -42,57 +37,43 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       try {
         const savedUser = await AsyncStorage.getItem('sladkiy_session_user');
         const savedNick = await AsyncStorage.getItem('sladkiy_session_nick');
-        if (savedUser && savedNick) {
-          await startSession(savedUser, savedNick);
-        }
-      } catch (e) {
-        console.log('Auth restore error:', e);
-      } finally {
-        setIsLoading(false);
-      }
+        if (savedUser && savedNick) await startSession(savedUser, savedNick);
+      } catch (e) { console.log('Auth restore:', e); }
+      finally { setIsLoading(false); }
     })();
   }, []);
 
   const login = async (nick: string): Promise<{ needsCode: boolean; code?: string }> => {
     const id = nick.toLowerCase();
     const trusted = await AsyncStorage.getItem('sladkiy_trusted_' + id);
-    if (trusted === 'true') {
-      startSession(id, '$' + nick);
-      return { needsCode: false };
-    }
+    if (trusted === 'true') { await startSession(id, nick); return { needsCode: false }; }
     const snapshot = await get(ref(database, `users/${id}`));
     if (snapshot.exists() && snapshot.val().loginCode) {
       return { needsCode: true, code: snapshot.val().loginCode };
-    } else {
-      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
-      await update(ref(database, `users/${id}`), { loginCode: newCode });
-      await AsyncStorage.setItem('sladkiy_trusted_' + id, 'true');
-      startSession(id, '$' + nick);
-      return { needsCode: false };
     }
+    const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+    await update(ref(database, `users/${id}`), { loginCode: newCode, nick: cleanNick(nick) });
+    await AsyncStorage.setItem('sladkiy_trusted_' + id, 'true');
+    await startSession(id, nick);
+    return { needsCode: false };
   };
 
-  const verifyCode = async (entered: string, correct: string): Promise<boolean> => {
-    return entered === correct;
-  };
+  const verifyCode = async (entered: string, correct: string) => entered === correct;
 
   const startSession = async (id: string, nick: string) => {
-    setMyId(id);
-    setMyNick(nick);
-    setIsLoggedIn(true);
+    const displayNick = cleanNick(nick);
+    setMyId(id); setMyNick(displayNick); setIsLoggedIn(true);
     await AsyncStorage.setItem('sladkiy_session_user', id);
-    await AsyncStorage.setItem('sladkiy_session_nick', nick);
+    await AsyncStorage.setItem('sladkiy_session_nick', displayNick);
     await AsyncStorage.setItem('sladkiy_trusted_' + id, 'true');
-
     const userRef = ref(database, `users/${id}`);
-    await update(userRef, { online: true, nick: nick });
+    await update(userRef, { online: true, nick: displayNick });
     onDisconnect(userRef).update({ online: false, lastSeen: serverTimestamp() });
-
-    const snapshot = await get(userRef);
-    if (snapshot.exists()) {
-      const val = snapshot.val();
-      if (val.avatar) setMyAvatar(val.avatar);
-      if (val.nick) setMyNick(val.nick);
+    const s = await get(userRef);
+    if (s.exists()) {
+      const v = s.val();
+      if (v.avatar) setMyAvatar(v.avatar);
+      if (v.nick) setMyNick(cleanNick(v.nick));
     }
   };
 
@@ -100,26 +81,19 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     if (myId) {
       await update(ref(database, `users/${myId}`), { online: false, lastSeen: serverTimestamp() });
       await AsyncStorage.removeItem('sladkiy_session_user');
+      await AsyncStorage.removeItem('sladkiy_session_nick');
       await AsyncStorage.removeItem('sladkiy_trusted_' + myId);
     }
-    setMyId(null);
-    setMyNick(null);
-    setMyAvatar('');
-    setIsLoggedIn(false);
+    setMyId(null); setMyNick(null); setMyAvatar(''); setIsLoggedIn(false);
   };
 
   const updateAvatar = (base64: string) => {
     setMyAvatar(base64);
-    if (myId) {
-      update(ref(database, `users/${myId}`), { avatar: base64 });
-    }
+    if (myId) update(ref(database, `users/${myId}`), { avatar: base64 });
   };
 
   return (
-    <AuthContext.Provider value={{
-      myId, myNick, myAvatar, isLoggedIn, isLoading,
-      login, verifyCode, startSession, logout, updateAvatar,
-    }}>
+    <AuthContext.Provider value={{ myId, myNick, myAvatar, isLoggedIn, isLoading, login, verifyCode, startSession, logout, updateAvatar }}>
       {children}
     </AuthContext.Provider>
   );

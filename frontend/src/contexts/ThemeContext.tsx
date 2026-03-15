@@ -17,48 +17,48 @@ export interface ThemeColors {
 
 const themes: Record<ThemeName, ThemeColors> = {
   space: {
-    background_gradient: ['#0f0c29', '#302b63', '#24243e'],
-    primary: '#d946ef',
-    text: '#e0d0ff',
-    text_secondary: '#bbaadd',
-    glass_bg: 'rgba(30, 20, 50, 0.7)',
-    glass_border: 'rgba(255, 255, 255, 0.1)',
-    message_in: 'rgba(60, 20, 90, 0.6)',
-    message_out: 'rgba(217, 70, 239, 0.4)',
-    nav_bg: 'rgba(15, 12, 41, 0.95)',
+    background_gradient: ['#0a0a2e', '#1a1a4e', '#16163a'],
+    primary: '#a855f7',
+    text: '#e8dff5',
+    text_secondary: '#9b8ec4',
+    glass_bg: 'rgba(20, 15, 45, 0.75)',
+    glass_border: 'rgba(168, 85, 247, 0.15)',
+    message_in: 'rgba(50, 25, 80, 0.6)',
+    message_out: 'rgba(168, 85, 247, 0.35)',
+    nav_bg: 'rgba(10, 10, 46, 0.96)',
   },
   sunset: {
-    background_gradient: ['#ff9966', '#ff5e62', '#9a366b'],
-    primary: '#ffcc00',
-    text: '#fff5e6',
-    text_secondary: '#ffdab9',
-    glass_bg: 'rgba(100, 30, 50, 0.6)',
-    glass_border: 'rgba(255, 255, 255, 0.2)',
-    message_in: 'rgba(100, 20, 40, 0.5)',
-    message_out: 'rgba(255, 94, 98, 0.6)',
-    nav_bg: 'rgba(154, 54, 107, 0.95)',
+    background_gradient: ['#1a0a1e', '#2d1b3d', '#1e0e28'],
+    primary: '#f472b6',
+    text: '#fce7f3',
+    text_secondary: '#c9a0b8',
+    glass_bg: 'rgba(45, 20, 45, 0.7)',
+    glass_border: 'rgba(244, 114, 182, 0.15)',
+    message_in: 'rgba(60, 15, 45, 0.6)',
+    message_out: 'rgba(244, 114, 182, 0.35)',
+    nav_bg: 'rgba(26, 10, 30, 0.96)',
   },
   dark: {
-    background_gradient: ['#232526', '#414345'],
-    primary: '#4facfe',
-    text: '#ffffff',
-    text_secondary: '#9aaabb',
-    glass_bg: 'rgba(40, 44, 52, 0.8)',
-    glass_border: 'rgba(255, 255, 255, 0.05)',
-    message_in: 'rgba(255, 255, 255, 0.1)',
-    message_out: 'rgba(79, 172, 254, 0.4)',
-    nav_bg: 'rgba(35, 37, 38, 0.95)',
+    background_gradient: ['#0d0d0d', '#1a1a1a', '#111111'],
+    primary: '#3b82f6',
+    text: '#f0f0f0',
+    text_secondary: '#888899',
+    glass_bg: 'rgba(30, 30, 35, 0.8)',
+    glass_border: 'rgba(59, 130, 246, 0.1)',
+    message_in: 'rgba(40, 40, 50, 0.7)',
+    message_out: 'rgba(59, 130, 246, 0.3)',
+    nav_bg: 'rgba(13, 13, 13, 0.96)',
   },
   light: {
-    background_gradient: ['#e0eafc', '#cfdef3'],
-    primary: '#007bff',
-    text: '#333333',
-    text_secondary: '#666666',
-    glass_bg: 'rgba(255, 255, 255, 0.65)',
-    glass_border: 'rgba(255, 255, 255, 0.8)',
-    message_in: 'rgba(255, 255, 255, 0.8)',
-    message_out: 'rgba(0, 123, 255, 0.3)',
-    nav_bg: 'rgba(255, 255, 255, 0.95)',
+    background_gradient: ['#f5f7fa', '#e4e9f0', '#f0f2f5'],
+    primary: '#6366f1',
+    text: '#1a1a2e',
+    text_secondary: '#64748b',
+    glass_bg: 'rgba(255, 255, 255, 0.75)',
+    glass_border: 'rgba(99, 102, 241, 0.15)',
+    message_in: 'rgba(255, 255, 255, 0.9)',
+    message_out: 'rgba(99, 102, 241, 0.2)',
+    nav_bg: 'rgba(245, 247, 250, 0.96)',
   },
 };
 
@@ -75,15 +75,9 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  themeName: 'space',
-  theme: themes.space,
-  setThemeName: () => {},
-  autoTheme: false,
-  setAutoTheme: () => {},
-  lang: 'en',
-  setLang: () => {},
-  globalNotifications: true,
-  setGlobalNotifications: () => {},
+  themeName: 'space', theme: themes.space, setThemeName: () => {},
+  autoTheme: false, setAutoTheme: () => {}, lang: 'en', setLang: () => {},
+  globalNotifications: true, setGlobalNotifications: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -96,62 +90,32 @@ export const ThemeProvider: React.FC<{children: React.ReactNode}> = ({ children 
 
   useEffect(() => {
     (async () => {
-      const savedTheme = await AsyncStorage.getItem('sladkiy_theme');
-      const savedLang = await AsyncStorage.getItem('sladkiy_lang');
-      const savedAuto = await AsyncStorage.getItem('sladkiy_auto_theme');
-      const savedNotif = await AsyncStorage.getItem('sladkiy_global_notif');
-      if (savedTheme) setThemeNameState(savedTheme as ThemeName);
-      if (savedLang) setLangState(savedLang);
-      if (savedAuto === 'true') setAutoThemeState(true);
-      if (savedNotif === 'false') setGlobalNotificationsState(false);
+      const st = await AsyncStorage.getItem('sladkiy_theme');
+      const sl = await AsyncStorage.getItem('sladkiy_lang');
+      const sa = await AsyncStorage.getItem('sladkiy_auto_theme');
+      const sn = await AsyncStorage.getItem('sladkiy_global_notif');
+      if (st) setThemeNameState(st as ThemeName);
+      if (sl) setLangState(sl);
+      if (sa === 'true') setAutoThemeState(true);
+      if (sn === 'false') setGlobalNotificationsState(false);
     })();
   }, []);
 
   useEffect(() => {
     if (!autoTheme) return;
-    const hour = new Date().getHours();
-    const isDay = hour >= 7 && hour < 20;
-    setThemeNameState(isDay ? 'light' : 'dark');
-    const interval = setInterval(() => {
-      const h = new Date().getHours();
-      const day = h >= 7 && h < 20;
-      setThemeNameState(day ? 'light' : 'dark');
-    }, 60000);
-    return () => clearInterval(interval);
+    const check = () => { const h = new Date().getHours(); setThemeNameState(h >= 7 && h < 20 ? 'light' : 'dark'); };
+    check();
+    const iv = setInterval(check, 60000);
+    return () => clearInterval(iv);
   }, [autoTheme]);
 
-  const setThemeName = useCallback((name: ThemeName) => {
-    setThemeNameState(name);
-    AsyncStorage.setItem('sladkiy_theme', name);
-  }, []);
-
-  const setAutoTheme = useCallback((v: boolean) => {
-    setAutoThemeState(v);
-    AsyncStorage.setItem('sladkiy_auto_theme', v ? 'true' : 'false');
-  }, []);
-
-  const setLang = useCallback((l: string) => {
-    setLangState(l);
-    AsyncStorage.setItem('sladkiy_lang', l);
-  }, []);
-
-  const setGlobalNotifications = useCallback((v: boolean) => {
-    setGlobalNotificationsState(v);
-    AsyncStorage.setItem('sladkiy_global_notif', v ? 'true' : 'false');
-  }, []);
+  const setThemeName = useCallback((n: ThemeName) => { setThemeNameState(n); AsyncStorage.setItem('sladkiy_theme', n); }, []);
+  const setAutoTheme = useCallback((v: boolean) => { setAutoThemeState(v); AsyncStorage.setItem('sladkiy_auto_theme', v ? 'true' : 'false'); }, []);
+  const setLang = useCallback((l: string) => { setLangState(l); AsyncStorage.setItem('sladkiy_lang', l); }, []);
+  const setGlobalNotifications = useCallback((v: boolean) => { setGlobalNotificationsState(v); AsyncStorage.setItem('sladkiy_global_notif', v ? 'true' : 'false'); }, []);
 
   return (
-    <ThemeContext.Provider value={{
-      themeName,
-      theme: themes[themeName],
-      setThemeName,
-      autoTheme,
-      setAutoTheme,
-      lang,
-      setLang,
-      globalNotifications,
-      setGlobalNotifications,
-    }}>
+    <ThemeContext.Provider value={{ themeName, theme: themes[themeName], setThemeName, autoTheme, setAutoTheme, lang, setLang, globalNotifications, setGlobalNotifications }}>
       {children}
     </ThemeContext.Provider>
   );
