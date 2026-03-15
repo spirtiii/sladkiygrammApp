@@ -35,6 +35,7 @@ interface Msg {
   giftLabel?: string;
   reactions?: Record<string, string>;
   voiceDuration?: string;
+  voiceUri?: string;
   photos?: string[];
   deletedFor?: Record<string, boolean>;
 }
@@ -90,7 +91,12 @@ export default function ChatRoom() {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showMemberMenu, setShowMemberMenu] = useState<{visible: boolean; member: any}>({visible: false, member: null});
 
+  const userScrolledUp = useRef(false);
   const flatListRef = useRef<FlatList>(null);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [voiceTooltip, setVoiceTooltip] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const recordingTimer = useRef<any>(null);
   const callTimer = useRef<any>(null);
@@ -295,12 +301,13 @@ export default function ChatRoom() {
     clearInterval(recordingTimer.current); setIsRecording(false);
     try {
       await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
       recordingRef.current = null;
-      if (chatId && myId) {
+      if (chatId && myId && uri) {
         const dur = fmtDur(recordingDuration);
         push(ref(database, `messages/${chatId}`), {
           from: myId, fromNick: myNick, text: `🎤 ${dur}`, type: 'voice',
-          time: serverTimestamp(), status: 'sent', voiceDuration: dur,
+          time: serverTimestamp(), status: 'sent', voiceDuration: dur, voiceUri: uri,
         });
         if (!isFavorites && !isGroup) {
           update(ref(database, `users/${myId}/chats/${id}`), { lastMsg: `🎤 ${dur}`, timestamp: serverTimestamp() });
@@ -308,6 +315,37 @@ export default function ChatRoom() {
         }
       }
     } catch (e) { console.log('Stop err:', e); }
+  };
+  const onVoiceTap = () => { setVoiceTooltip(true); setTimeout(() => setVoiceTooltip(false), 2000); };
+  const playVoice = async (uri?: string) => {
+    if (!uri) return;
+    try {
+      if (soundRef.current) { await soundRef.current.unloadAsync(); soundRef.current = null; }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync({ uri });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate(status => {
+        if (status.isLoaded && status.didJustFinish) { setPlayingKey(null); sound.unloadAsync(); }
+      });
+      await sound.playAsync();
+    } catch (e) { console.log('Play err:', e); }
+  };
+
+  // Pick video
+  const pickVideo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'], quality: 0.4, base64: false });
+    if (!result.canceled && result.assets[0] && chatId && myId) {
+      push(ref(database, `messages/${chatId}`), {
+        from: myId, fromNick: myNick, text: '📹 Video', type: 'video',
+        time: serverTimestamp(), status: 'sent',
+      });
+      if (!isFavorites && !isGroup) {
+        update(ref(database, `users/${myId}/chats/${id}`), { lastMsg: '📹 Video', timestamp: serverTimestamp() });
+        update(ref(database, `users/${id}/chats/${myId}`), { lastMsg: '📹 Video', timestamp: serverTimestamp() });
+      }
+    }
   };
 
   // Calls
@@ -378,16 +416,29 @@ export default function ChatRoom() {
     setShowMemberMenu({ visible: false, member: null });
   };
   const changeGroupName = () => {
-    Alert.prompt?.('Group Name', '', (val: string) => {
-      if (val && id && myId) {
-        update(ref(database, `groups/${id}`), { name: val });
-        push(ref(database, `messages/${chatId}`), {
-          from: 'system', fromNick: 'System',
-          text: `${myNick} ${lang === 'ru' ? 'изменил название' : 'changed name'}`,
-          type: 'system', time: serverTimestamp(), status: 'sent',
-        });
-      }
-    });
+    setNewGroupName(peerNick || '');
+    setShowGroupNameInput(true);
+  };
+  const submitGroupName = () => {
+    if (newGroupName.trim() && id && myId) {
+      update(ref(database, `groups/${id}`), { name: newGroupName.trim() });
+      push(ref(database, `messages/${chatId}`), {
+        from: 'system', fromNick: 'System',
+        text: `${myNick} ${lang === 'ru' ? 'изменил название' : 'changed name'}`,
+        type: 'system', time: serverTimestamp(), status: 'sent',
+      });
+    }
+    setShowGroupNameInput(false);
+  };
+  const changeGroupAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1,1], quality: 0.4, base64: true });
+    if (!result.canceled && result.assets[0].base64 && id && myId) {
+      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      update(ref(database, `groups/${id}`), { avatar: base64 });
+      push(ref(database, `messages/${chatId}`), { from: 'system', fromNick: 'System', text: `${myNick} ${lang === 'ru' ? 'изменил аватар' : 'changed avatar'}`, type: 'system', time: serverTimestamp(), status: 'sent' });
+    }
   };
 
   // Helpers
@@ -399,10 +450,17 @@ export default function ChatRoom() {
   const fmtLastSeen = (ts: number | null) => {
     if (!ts) return '';
     const d = new Date(ts);
-    const diff = (Date.now() - d.getTime()) / 60000;
-    if (diff < 2) return t.just_now;
+    const now = new Date();
+    const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
+    if (diffMin < 1) return t.just_now;
+    if (diffMin < 60) return `${diffMin} ${t.min_ago}`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH} ${t.hours_ago}`;
+    const isYesterday = now.getDate() - d.getDate() === 1 && now.getMonth() === d.getMonth();
+    const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+    if (isYesterday) return `${t.yesterday} ${timeStr}`;
     const months = lang === 'ru' ? MONTHS_RU : MONTHS_EN;
-    return `${t.last_seen} ${d.getDate()} ${months[d.getMonth()]} ${t.at} ${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+    return `${t.last_seen} ${d.getDate()} ${months[d.getMonth()]} ${t.at} ${timeStr}`;
   };
   const fmtMsgDate = (ts: number) => {
     if (!ts) return '';
@@ -538,7 +596,10 @@ export default function ChatRoom() {
             <View style={styles.voiceMsg}>
               <Ionicons name="mic" size={20} color={theme.primary} />
               <Text style={[styles.voiceDuration, { color: theme.text }]}>{item.voiceDuration || '00:00'}</Text>
-              <TouchableOpacity style={[styles.playBtn, { backgroundColor: theme.primary }]}><Ionicons name="play" size={16} color="#fff" /></TouchableOpacity>
+              <TouchableOpacity style={[styles.playBtn, { backgroundColor: playingKey === item.key ? '#ff4444' : theme.primary }]}
+                onPress={() => { setPlayingKey(item.key); playVoice(item.voiceUri); }}>
+                <Ionicons name={playingKey === item.key ? 'pause' : 'play'} size={16} color="#fff" />
+              </TouchableOpacity>
             </View>
           ) : item.type === 'sticker' ? (
             <Text style={styles.stickerText}>{item.text}</Text>
@@ -604,7 +665,13 @@ export default function ChatRoom() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex} keyboardVerticalOffset={0}>
         <FlatList ref={flatListRef} testID="messages-list" data={messages} keyExtractor={item => item.key}
           renderItem={renderMessage} contentContainerStyle={styles.msgList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() => { if (!userScrolledUp.current) flatListRef.current?.scrollToEnd({ animated: false }); }}
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            const atBottom = contentOffset.y >= contentSize.height - layoutMeasurement.height - 100;
+            userScrolledUp.current = !atBottom;
+          }}
+          scrollEventThrottle={100}
           ListEmptyComponent={<View style={styles.emptyChat}><Text style={styles.emptyCandyIcon}>🍬</Text><Text style={[styles.emptyTitle, { color: theme.text }]}>{t.new_chat_title}</Text><Text style={[styles.emptyDesc, { color: theme.text_secondary }]}>{isFavorites ? t.favorites_desc : t.new_chat_desc}</Text></View>}
         />
         {replyTo && (
@@ -641,10 +708,14 @@ export default function ChatRoom() {
               <Ionicons name="send" size={18} color="#fff" />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity testID="voice-btn" style={[styles.sendBtn, { backgroundColor: theme.primary }]}
-              onPressIn={startRecording} onPressOut={stopRecording}>
-              <Ionicons name="mic" size={20} color="#fff" />
-            </TouchableOpacity>
+            <View style={{ position: 'relative' }}>
+              {voiceTooltip && <View style={styles.tooltip}><Text style={styles.tooltipText}>{t.hold_to_record}</Text></View>}
+              <TouchableOpacity testID="voice-btn" style={[styles.sendBtn, { backgroundColor: isRecording ? '#ff4444' : theme.primary }]}
+                onPress={onVoiceTap} onLongPress={startRecording} onPressOut={() => { if (isRecording) stopRecording(); }}
+                delayLongPress={300}>
+                <Ionicons name="mic" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -743,18 +814,23 @@ export default function ChatRoom() {
           <View style={[styles.groupModal, glassStyle, { backgroundColor: 'rgba(15,12,30,0.96)' }]}>
             {renderAvatar(peerAvatar, peerNick?.charAt(0).toUpperCase() || '?', 80)}
             <Text style={[styles.profileNick, { color: theme.text }]}>{peerNick}</Text>
-            <Text style={[styles.profileBio, { color: theme.text_secondary }]}>{groupMembers.length} {lang === 'ru' ? 'участников' : 'members'}</Text>
+            <Text style={[styles.profileBio, { color: theme.text_secondary }]}>{groupMembers.length} {t.members}</Text>
             {groupOwner === myId && (
-              <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 10 }]} onPress={changeGroupName}>
-                <Text style={styles.btnText}>{lang === 'ru' ? 'Изменить название' : 'Change Name'}</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                <TouchableOpacity style={[styles.profileActionBtn, { backgroundColor: theme.primary }]} onPress={() => { setShowGroupInfo(false); changeGroupName(); }}>
+                  <Ionicons name="pencil" size={18} color="#fff" /><Text style={styles.profileActionText}>{t.change_name}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.profileActionBtn, { backgroundColor: '#9b59b6' }]} onPress={() => { setShowGroupInfo(false); changeGroupAvatar(); }}>
+                  <Ionicons name="camera" size={18} color="#fff" /><Text style={styles.profileActionText}>{t.change_avatar}</Text>
+                </TouchableOpacity>
+              </View>
             )}
             <View style={styles.membersList}>
               {groupMembers.map(m => (
                 <TouchableOpacity key={m.id} style={styles.memberItem}
                   onLongPress={() => groupOwner === myId && m.id !== myId && setShowMemberMenu({ visible: true, member: m })}>
                   {renderAvatar(m.avatar, m.nick?.charAt(0).toUpperCase() || '?', 36)}
-                  <Text style={[styles.memberName, { color: theme.text }]}>{m.nick}{m.id === groupOwner ? ' 👑' : ''}</Text>
+                  <Text style={[styles.memberName, { color: theme.text }]}>{m.nick}{m.id === groupOwner ? ` 👑 ${t.group_creator}` : ''}</Text>
                   {m.online && <View style={[styles.miniOnline, { position: 'relative', marginLeft: 'auto' }]} />}
                 </TouchableOpacity>
               ))}
@@ -780,10 +856,31 @@ export default function ChatRoom() {
       {/* Photo fullscreen */}
       <Modal visible={!!fullScreenPhoto} transparent animationType="fade">
         <View style={styles.fullscreenOverlay}>
-          <TouchableOpacity style={styles.fullscreenClose} onPress={() => setFullScreenPhoto(null)}>
-            <Ionicons name="close-circle" size={36} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.fullscreenTopBar}>
+            <TouchableOpacity style={styles.fullscreenClose} onPress={() => setFullScreenPhoto(null)}>
+              <Ionicons name="close-circle" size={36} color="#fff" />
+            </TouchableOpacity>
+          </View>
           {fullScreenPhoto && <Image source={{ uri: fullScreenPhoto }} style={styles.fullscreenImg} resizeMode="contain" />}
+        </View>
+      </Modal>
+
+      {/* Group name edit modal */}
+      <Modal visible={showGroupNameInput} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.contextMenu, glassStyle, { backgroundColor: 'rgba(15,12,30,0.96)', padding: 20 }]}>
+            <Text style={[styles.callName, { fontSize: 18, marginBottom: 10, color: theme.text }]}>{lang === 'ru' ? 'Название группы' : 'Group Name'}</Text>
+            <TextInput style={[styles.searchInput, { color: theme.text, borderColor: theme.glass_border, marginBottom: 15 }]}
+              value={newGroupName} onChangeText={setNewGroupName} autoFocus />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={[styles.callControlBtn, { backgroundColor: 'rgba(255,255,255,0.1)', flex: 1, borderRadius: 12, height: 44 }]} onPress={() => setShowGroupNameInput(false)}>
+                <Text style={{ color: theme.text, fontWeight: '600' }}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.callControlBtn, { backgroundColor: theme.primary, flex: 1, borderRadius: 12, height: 44 }]} onPress={submitGroupName}>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{t.save}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -928,8 +1025,11 @@ const styles = StyleSheet.create({
   memberItem: { flexDirection: 'row', alignItems: 'center', padding: 10, gap: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   memberName: { fontSize: 15, fontWeight: '600' },
   fullscreenOverlay: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
-  fullscreenClose: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
+  fullscreenTopBar: { position: 'absolute', top: 40, left: 0, right: 0, flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, zIndex: 10 },
+  fullscreenClose: {},
   fullscreenImg: { width: SCREEN_W, height: '80%' },
+  tooltip: { position: 'absolute', bottom: 55, right: -20, backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, width: 160 },
+  tooltipText: { color: '#fff', fontSize: 12, textAlign: 'center' },
   callOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
   callGradient: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 15 },
   callName: { fontSize: 28, fontWeight: '800', color: '#fff', marginTop: 10 },
